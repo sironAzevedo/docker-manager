@@ -13,7 +13,6 @@ class DockerApp:
         self.docker_client = docker.from_env()
         self.current_selected_container = None
         self.log_update_job = None
-
         self.setup_ui()
 
     def setup_ui(self):
