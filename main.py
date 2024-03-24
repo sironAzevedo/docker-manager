@@ -321,7 +321,7 @@ class DockerApp:
     def open_build_container_window(self):
         self.build_window = tk.Toplevel()
         self.build_window.title("Construir Container")
-        self.__center_window(self.build_window, 500, 300)
+        self.__center_window(self.build_window, 550, 500)
         self.build_window.resizable(width=False, height=False)
 
         # Imagem selecionada
@@ -343,14 +343,49 @@ class DockerApp:
         # Networks
         tk.Label(self.build_window, text="Networks:").pack(pady=(10, 2))
         self.network_combobox = ttk.Combobox(self.build_window, state="readonly")
-        self.network_combobox.pack(ipadx=60)
+        self.network_combobox.pack(ipadx=60, pady=5)
+
+        # Adiciona seção para Environment Variables
+        env_frame = ttk.LabelFrame(self.build_window, text="Variáveis de Ambiente", labelanchor="n", relief="raised")
+        env_frame.pack(fill=tk.Y, pady=20)
+
+        # Entradas para chave e valor
+        key_entry = ttk.Entry(env_frame)
+        key_entry.grid(row=0, column=0, padx=5, pady=5)
+
+        value_entry = ttk.Entry(env_frame)
+        value_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        # Lista para armazenar variáveis de ambiente
+        env_vars = []
+
+        def add_env_var():
+            # Função para adicionar variáveis de ambiente à lista
+            env_key = key_entry.get()
+            env_value = value_entry.get()
+            if env_key and env_value:  # Verifica se ambos os campos estão preenchidos
+                env_vars.append((env_key, env_value))
+                env_listbox.insert(tk.END, f"{env_key}={env_value}")
+                key_entry.delete(0, tk.END)
+                value_entry.delete(0, tk.END)
+
+        add_button = ttk.Button(env_frame, text="Adicionar", command=add_env_var)
+        add_button.grid(row=0, column=2, padx=5, pady=5)
+
+        # ListBox para mostrar as variáveis de ambiente adicionadas
+        env_listbox = tk.Listbox(env_frame, height=5)
+        env_listbox.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
 
         # Preenche o combobox com as redes disponíveis
         self.fill_network_combobox()
 
         # Botão para construir o container  command= lambda: action(someNumber))
-        ttk.Button(self.build_window, text="Construir", command=lambda: self.build_container(image_tag)).pack(
-            pady=(30, 0))
+        ttk.Button(self.build_window, text="Construir", command=lambda: self.build_container(image_tag,
+                                                                                             self.container_name_entry.get(),
+                                                                                             self.port_entry.get(),
+                                                                                             self.network_combobox.get(),
+                                                                                             env_vars)
+                   ).pack(pady=(30, 0))
 
     def fill_network_combobox(self):
         networks = self.get_available_networks()
@@ -364,14 +399,16 @@ class DockerApp:
         except Exception as e:
             messagebox.showerror("Erro", str(e))
 
-    def build_container(self, image_selected):
+    def build_container(self, image_selected, container_name, port, network, env_vars):
         try:
-            container_name = self.container_name_entry.get()
-            port = self.port_entry.get()
-            network = self.network_combobox.get()
+            # container_name = self.container_name_entry.get()
+            # port = self.port_entry.get()
+            # network = self.network_combobox.get()
+            environment = dict(env_vars)
 
             self.docker_client.containers.run(image_selected, name=container_name,
                                               ports={port.split(':')[1]: port.split(':')[0]}, network=network,
+                                              environment=environment,
                                               detach=True)
             self.list_containers()
 
